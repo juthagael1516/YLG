@@ -141,7 +141,9 @@
               <p className="text-sm text-emerald-700">Welcome / ยินดีต้อนรับ</p>
               <h2 className="text-2xl font-semibold">{result.name}</h2>
               <div className="mt-2 text-emerald-800">Your table is / หมายเลขโต๊ะ</div>
-              <div className="text-5xl font-bold tracking-tight">{result.table}</div>
+              <div className="text-5xl font-bold tracking-tight">
+                {result.table || "-"}
+              </div>
               <div className="mt-3 text-xs text-emerald-700/80">
                 Show this screen to our staff. Enjoy the celebration 🤍<br/>
                 แสดงหน้านี้ให้เจ้าหน้าที่เพื่อความสะดวกในการเข้างาน
@@ -153,3 +155,12 @@
             This page loads the guest list from <code>guest-list.csv</code> on each visit. /
             หน้านี้จะโหลดรายชื่อแขกจากไฟล์ <code>guest-list.csv</code> ทุกครั้งที่เปิด
           </footer>
+        </div>
+      );
+    }
+
+    // ⬇️ สำคัญ: ต้องมีบรรทัด render นี้
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
