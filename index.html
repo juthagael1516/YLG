@@ -39,7 +39,7 @@
         const get  = (idx) => (cols[idx]||"").replace(/^"(.*)"$/,"$1").trim();
         const name  = nameIdx  >=0 ? get(nameIdx)  : "";
         const table = tableIdx >=0 ? get(tableIdx) : "";
-        if (name) out.push({ name, table: table || "-" });
+        if (name) out.push({ name, table: table || "" });
       }
       return out;
     }
@@ -94,6 +94,11 @@
         else setErr("Name not found. Please check spelling or contact staff. / ไม่พบชื่อ กรุณาตรวจสอบการสะกดหรือติดต่อเจ้าหน้าที่");
       }
 
+      const renderTableValue = (table) => {
+        const empty = !table || table.trim() === "" || table === "-";
+        return empty ? "Standing zone / สแตนด์ดิงโซน" : table;
+      };
+
       return (
         <div className="max-w-xl mx-auto px-4 py-8">
           <header className="mb-6 text-center">
@@ -142,7 +147,7 @@
               <h2 className="text-2xl font-semibold">{result.name}</h2>
               <div className="mt-2 text-emerald-800">Your table is / หมายเลขโต๊ะ</div>
               <div className="text-5xl font-bold tracking-tight">
-                {result.table || "-"}
+                {renderTableValue(result.table)}
               </div>
               <div className="mt-3 text-xs text-emerald-700/80">
                 Show this screen to our staff. Enjoy the celebration 🤍<br/>
@@ -159,7 +164,6 @@
       );
     }
 
-    // ⬇️ สำคัญ: ต้องมีบรรทัด render นี้
     ReactDOM.createRoot(document.getElementById("root")).render(<App />);
   </script>
 </body>
