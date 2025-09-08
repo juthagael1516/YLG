@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Wedding Check-In</title>
+  <title>Wedding Check-In / เช็กอินงานแต่ง</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
@@ -21,51 +21,48 @@
     const { useEffect, useMemo, useState } = React;
 
     // ---------- SETTINGS ----------
-    // Because index.html and guest-list.csv are in the same folder on GitHub Pages,
-    // a relative path works:
+    // guest-list.csv must live next to index.html in your repo
     const CSV_URL = "./guest-list.csv";
 
     // ---------- HELPERS ----------
-    function normalizeName(s){ return s.trim().toLowerCase().replace(/\s+/g," "); }
+    const normalizeName = (s) => s.trim().toLowerCase().replace(/\s+/g, " ");
 
+    // simple CSV parser (handles "quoted, values")
     function parseCSV(text) {
-      const rows = text.replace(/\r/g,"").split("\n").map(r=>r.trim());
-      const nonEmpty = rows.filter(Boolean);
-      if (!nonEmpty.length) return [];
-      const header = nonEmpty[0].split(",").map(c=>c.trim().toLowerCase());
+      const lines = text.replace(/\r/g,"").split("\n").map(l=>l.trim());
+      const rows = lines.filter(Boolean);
+      if (!rows.length) return [];
+      const header = rows[0].match(/("([^"]*)"|[^,]+)/g).map(c=>c.replace(/^"(.*)"$/,"$1").trim().toLowerCase());
       const nameIdx  = header.findIndex(h => /name/.test(h));
       const tableIdx = header.findIndex(h => /table/.test(h));
       const out = [];
-      for (let i = 1; i < nonEmpty.length; i++) {
-        // Support simple quoted values
-        const line = nonEmpty[i];
-        const cols = line.match(/("([^"]*)"|[^,]+)/g) || [];
-        const get = (idx) => (cols[idx] || "").replace(/^"(.*)"$/,"$1").trim();
-        const name = nameIdx >= 0 ? get(nameIdx) : "";
-        const table = tableIdx >= 0 ? get(tableIdx) : "";
+      for (let i=1; i<rows.length; i++){
+        const cols = rows[i].match(/("([^"]*)"|[^,]+)/g) || [];
+        const get = (idx) => (cols[idx]||"").replace(/^"(.*)"$/,"$1").trim();
+        const name  = nameIdx  >=0 ? get(nameIdx)  : "";
+        const table = tableIdx >=0 ? get(tableIdx) : "";
         if (name) out.push({ name, table: table || "-" });
       }
       return out;
     }
 
-    // ---------- APP ----------
     function App(){
-      const [guests,setGuests] = useState([]);
-      const [name,setName]   = useState("");
-      const [result,setResult] = useState(null);
-      const [err,setErr] = useState("");
-      const [loading,setLoading] = useState(true);
+      const [guests, setGuests] = useState([]);
+      const [name, setName]     = useState("");
+      const [result, setResult] = useState(null);
+      const [err, setErr]       = useState("");
+      const [loading, setLoading] = useState(true);
 
-      // Prefill from ?name=
+      // Prefill from ?name= or ?guest=
       useEffect(()=>{
         const q = new URLSearchParams(window.location.search);
         const urlName = q.get("name") || q.get("guest");
         if (urlName) setName(urlName);
       },[]);
 
-      // Load CSV at startup (cache-busted)
+      // Auto-load CSV on startup (cache-busted)
       useEffect(()=>{
-        async function loadCSV(){
+        (async () => {
           try{
             const res = await fetch(CSV_URL + "?t=" + Date.now(), { cache: "no-store" });
             if (!res.ok) throw new Error("CSV not found");
@@ -74,52 +71,54 @@
             setGuests(list);
             setErr("");
           }catch(e){
-            setErr("Could not load guest list. Please contact staff.");
+            setErr("Could not load guest list. Please contact staff. / ไม่สามารถโหลดรายชื่อแขกได้ กรุณาติดต่อเจ้าหน้าที่");
           }finally{
             setLoading(false);
           }
-        }
-        loadCSV();
+        })();
       },[]);
 
-      const index = useMemo(()=>{
+      const index = useMemo(() => {
         const m = new Map();
         guests.forEach(g => m.set(normalizeName(g.name), g));
         return m;
-      },[guests]);
+      }, [guests]);
 
       function lookup(){
         setErr(""); setResult(null);
         const key = normalizeName(name);
-        if (!key){ setErr("Please enter your full name."); return; }
+        if (!key){
+          setErr("Please enter your full name. / กรุณากรอกชื่อ-นามสกุล");
+          return;
+        }
         const hit = index.get(key);
         if (hit) setResult(hit);
-        else setErr("Name not found. Please check spelling or contact staff.");
+        else setErr("Name not found. Please check spelling or contact staff. / ไม่พบชื่อ กรุณาตรวจสอบการสะกดหรือติดต่อเจ้าหน้าที่");
       }
 
       return (
         <div className="max-w-xl mx-auto px-4 py-8">
-          <header className="mb-6">
-            <h1 className="text-3xl font-semibold tracking-tight">Wedding Check-In</h1>
-            <p className="text-sm text-slate-500 mt-1">Type your name to see your table.</p>
+          <header className="mb-6 text-center">
+            <h1 className="text-3xl font-semibold tracking-tight">Wedding Check-In / เช็กอินงานแต่ง</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Type your name to see your table. / พิมพ์ชื่อตัวเองเพื่อดูหมายเลขโต๊ะ
+            </p>
           </header>
 
-          {/* Status */}
           {loading && (
             <div className="mb-4 px-4 py-3 bg-slate-50 text-slate-700 rounded-2xl ring-1 ring-slate-200">
-              Loading guest list…
+              Loading guest list… / กำลังโหลดรายชื่อแขก…
             </div>
           )}
 
-          {/* Name input */}
           <div className="bg-white rounded-2xl p-4 ring-1 ring-slate-200 shadow-sm mb-4">
-            <label className="text-sm font-medium">Your full name</label>
+            <label className="text-sm font-medium">Your full name / ชื่อ-นามสกุล</label>
             <input
               className="mt-2 w-full rounded-xl ring-1 ring-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900"
-              placeholder="e.g., Somchai Prasert"
+              placeholder="e.g., Somchai Prasert / ตัวอย่าง: สมชาย ประเสริฐ"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") lookup(); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') lookup(); }}
               disabled={loading}
             />
             <div className="mt-3">
@@ -128,27 +127,33 @@
                 className="w-full md:w-auto px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
                 disabled={loading}
               >
-                Show my table
+                Show my table / ดูหมายเลขโต๊ะ
               </button>
             </div>
           </div>
 
-          {/* Messages */}
           {err && (
-            <div className="mb-4 px-4 py-3 bg-rose-50 text-rose-700 rounded-2xl ring-1 ring-rose-200">{err}</div>
-          )}
-          {result && (
-            <div className="mb-4 p-5 rounded-2xl bg-emerald-50 ring-1 ring-emerald-200">
-              <p className="text-sm text-emerald-700">Welcome,</p>
-              <h2 className="text-2xl font-semibold">{result.name}</h2>
-              <div className="mt-2 text-emerald-800">Your table is</div>
-              <div className="text-5xl font-bold tracking-tight">{result.table}</div>
-              <div className="mt-3 text-xs text-emerald-700/80">Show this screen to our staff. Enjoy the celebration 🤍</div>
+            <div className="mb-4 px-4 py-3 bg-rose-50 text-rose-700 rounded-2xl ring-1 ring-rose-200">
+              {err}
             </div>
           )}
 
-          <footer className="mt-10 text-[11px] text-slate-500">
-            <p>This page loads the guest list from <code>guest-list.csv</code> on each visit.</p>
+          {result && (
+            <div className="mb-4 p-5 rounded-2xl bg-emerald-50 ring-1 ring-emerald-200 text-center">
+              <p className="text-sm text-emerald-700">Welcome / ยินดีต้อนรับ</p>
+              <h2 className="text-2xl font-semibold">{result.name}</h2>
+              <div className="mt-2 text-emerald-800">Your table is / หมายเลขโต๊ะ</div>
+              <div className="text-5xl font-bold tracking-tight">{result.table}</div>
+              <div className="mt-3 text-xs text-emerald-700/80">
+                Show this screen to our staff. Enjoy the celebration 🤍<br/>
+                แสดงหน้านี้ให้เจ้าหน้าที่เพื่อความสะดวกในการเข้างาน
+              </div>
+            </div>
+          )}
+
+          <footer className="mt-10 text-[11px] text-slate-500 text-center">
+            This page loads the guest list from <code>guest-list.csv</code> on each visit. /
+            หน้านี้จะโหลดรายชื่อแขกจากไฟล์ <code>guest-list.csv</code> ทุกครั้งที่เปิด
           </footer>
         </div>
       );
