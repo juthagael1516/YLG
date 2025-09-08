@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Wedding Check-In</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-800">
+  <div id="root"></div>
+
+  <!-- React & Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useEffect, useMemo, useRef, useState } = React;
+
+    const DEMO_GUESTS = [
+      { name: "Somchai Prasert", table: "A1" },
+      { name: "Suda Wattanakorn", table: "A1" },
+      { name: "Narin Boonmee", table: "B2" },
+      { name: "Wallada Team", table: "VIP" },
+      { name: "Kymickk", table: "C3" },
+    ];
+
+    const normalizeName = (s) => s.trim().toLowerCase().replace(/\s+/g, " ");
+
+    function parseCSV(text) {
+      const rows = text.replace(/\r/g, "").split("\n").map(r => r.trim()).filter(Boolean);
+      if (!rows.length) return [];
+      const header = rows[0].split(",").map(c => c.trim().toLowerCase());
+      const nameIdx = header.findIndex(h => /name/.test(h));
+      const tableIdx = header.findIndex(h => /table/.test(h));
+      const out = [];
+      for (let i = 1; i < rows.length; i++) {
+        const cols = rows[i].split(",");
+        const name = (cols[nameIdx] || "").trim();
+        const table = (cols[tableIdx] || "").trim();
+        if (name) out.push({ name, table: table || "-" });
+      }
+      return out;
+    }
+
+    function App() {
+      const [guests, setGuests] = useState(DEMO_GUESTS);
+      const [name, setName] = useState("");
+      const [result, setResult] = useState(null);
+      const [err, setErr] = useState("");
+
+      const index = useMemo(() => {
+        const map = new Map();
+        for (const g of guests) map.set(normalizeName(g.name), g);
+        return map;
+      }, [guests]);
+
+      function lookup() {
+        setErr("");
+        setResult(null);
+        const key = normalizeName(name);
+        if (!key) {
+          setErr("Please enter your full name.");
+          return;
+        }
+        const hit = index.get(key) || null;
+        if (hit) setResult(hit);
+        else setErr("Name not found. Please check spelling or contact staff.");
+      }
+
+      function handleCSVUpload(file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const text = String(reader.result || "");
+          const parsed = parseCSV(text);
+          if (parsed.length) {
+            setGuests(parsed);
+            setErr("");
+          } else {
+            setErr("Could not parse CSV. Use columns: name,table");
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      return (
+        <div className="max-w-xl mx-auto px-4 py-8">
+          <header className="mb-6">
+            <h1 className="text-3xl font-semibold tracking-tight">Wedding Check-In</h1>
+            <p className="text-sm text-slate-500 mt-1">Type your name to see your table.</p>
+          </header>
+
+          <details className="mb-6 border rounded-2xl p-4 bg-white/70">
+            <summary className="cursor-pointer text-sm font-medium">Guest list (upload CSV)</summary>
+            <div className="mt-3 space-y-2 text-sm">
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleCSVUpload(f);
+                }}
+              />
+              <p className="text-slate-500">Columns required: <code>name</code>, <code>table</code>. Example:</p>
+              <pre className="bg-slate-100 rounded-xl p-3 overflow-auto text-xs">name,table{"\n"}Somchai Prasert,A1{"\n"}Suda Wattanakorn,A1</pre>
+            </div>
+          </details>
+
+          <div className="bg-white rounded-2xl p-4 ring-1 ring-slate-200 shadow-sm mb-4">
+            <label className="text-sm font-medium">Your full name</label>
+            <input
+              className="mt-2 w-full rounded-xl ring-1 ring-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900"
+              placeholder="e.g., Somchai Prasert"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") lookup(); }}
+            />
+            <div className="mt-3">
+              <button
+                onClick={lookup}
+                className="w-full md:w-auto px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800"
+              >
+                Show my table
+              </button>
+            </div>
+          </div>
+
+          {err && (
+            <div className="mb-4 px-4 py-3 bg-rose-50 text-rose-700 rounded-2xl ring-1 ring-rose-200">{err}</div>
+          )}
+          {result && (
+            <div className="mb-4 p-5 rounded-2xl bg-emerald-50 ring-1 ring-emerald-200">
+              <p className="text-sm text-emerald-700">Welcome,</p>
+              <h2 className="text-2xl font-semibold">{result.name}</h2>
+              <div className="mt-2 text-emerald-800">Your table is</div>
+              <div className="text-5xl font-bold tracking-tight">{result.table}</div>
+              <div className="mt-3 text-xs text-emerald-700/80">Show this screen to our staff. Enjoy the celebration 🤍</div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
