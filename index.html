@@ -21,27 +21,49 @@
     const { useEffect, useMemo, useState } = React;
 
     // ---------- SETTINGS ----------
-    const CSV_URL = "./guest-list.csv"; // guest-list.csv อยู่ใน repo เดียวกับ index.html
+    const CSV_URL = "./guest-list.csv"; // guest-list.csv ต้องอยู่โฟลเดอร์เดียวกับ index.html
 
     // ---------- HELPERS ----------
-    const normalizeName = (s) => s.trim().toLowerCase().replace(/\s+/g, " ");
+    const normalizeName = (s) => (s || "").toString().trim().toLowerCase().replace(/\s+/g, " ");
 
+    // เดา delimiter (comma หรือ tab) และ parse ให้ทนทานขึ้น
     function parseCSV(text) {
-      const lines = text.replace(/\r/g,"").split("\n").map(l=>l.trim());
-      const rows  = lines.filter(Boolean);
-      if (!rows.length) return [];
-      const header = (rows[0].match(/("([^"]*)"|[^,]+)/g) || []).map(c=>c.replace(/^"(.*)"$/,"$1").trim().toLowerCase());
+      const raw = (text || "").replace(/\r/g, "");
+      const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
+      if (!lines.length) return [];
+
+      const first = lines[0];
+      const delim = first.includes(",") ? "," : (first.includes("\t") ? "\t" : ",");
+
+      const header = first.split(delim).map(c => c.trim().toLowerCase());
       const nameIdx  = header.findIndex(h => /name/.test(h));
       const tableIdx = header.findIndex(h => /table/.test(h));
+
       const out = [];
-      for (let i=1; i<rows.length; i++){
-        const cols = rows[i].match(/("([^"]*)"|[^,]+)/g) || [];
-        const get  = (idx) => (cols[idx]||"").replace(/^"(.*)"$/,"$1").trim();
-        const name  = nameIdx  >=0 ? get(nameIdx)  : "";
-        const table = tableIdx >=0 ? get(tableIdx) : "";
-        if (name) out.push({ name, table: table || "" });
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(delim);
+        const name  = (cols[nameIdx]  || "").trim();
+        const table = (cols[tableIdx] || "").trim();
+        if (name) out.push({ name, table });
       }
       return out;
+    }
+
+    // ตรวจว่า table ควรถูกตีความเป็น "Standing zone" หรือไม่
+    function isStandingValue(name, table) {
+      if (table == null) return true;
+      // ลบ zero-width char แล้ว trim
+      const clean = table.toString().replace(/\u200B/g, "").trim();
+      if (clean === "" || clean === "-") return true;
+
+      // กันกรณีใส่ชื่อซ้ำในคอลัมน์ table โดยไม่ได้ตั้งใจ
+      return normalizeName(clean) === normalizeName(name);
+    }
+
+    function renderTableValue(name, table) {
+      return isStandingValue(name, table)
+        ? "Standing zone / สแตนด์ดิงโซน"
+        : table.toString().trim();
     }
 
     function App(){
@@ -58,7 +80,7 @@
         if (urlName) setName(urlName);
       },[]);
 
-      // Auto-load CSV on startup
+      // Auto-load CSV on startup (cache-busted)
       useEffect(()=>{
         (async () => {
           try{
@@ -93,11 +115,6 @@
         if (hit) setResult(hit);
         else setErr("Name not found. Please check spelling or contact staff. / ไม่พบชื่อ กรุณาตรวจสอบการสะกดหรือติดต่อเจ้าหน้าที่");
       }
-
-      const renderTableValue = (table) => {
-        const empty = !table || table.trim() === "" || table === "-";
-        return empty ? "Standing zone / สแตนด์ดิงโซน" : table;
-      };
 
       return (
         <div className="max-w-xl mx-auto px-4 py-8">
@@ -147,7 +164,7 @@
               <h2 className="text-2xl font-semibold">{result.name}</h2>
               <div className="mt-2 text-emerald-800">Your table is / หมายเลขโต๊ะ</div>
               <div className="text-5xl font-bold tracking-tight">
-                {renderTableValue(result.table)}
+                {renderTableValue(result.name, result.table)}
               </div>
               <div className="mt-3 text-xs text-emerald-700/80">
                 Show this screen to our staff. Enjoy the celebration 🤍<br/>
