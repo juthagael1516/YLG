@@ -30,15 +30,15 @@
     // simple CSV parser (handles "quoted, values")
     function parseCSV(text) {
       const lines = text.replace(/\r/g,"").split("\n").map(l=>l.trim());
-      const rows = lines.filter(Boolean);
+      const rows  = lines.filter(Boolean);
       if (!rows.length) return [];
-      const header = rows[0].match(/("([^"]*)"|[^,]+)/g).map(c=>c.replace(/^"(.*)"$/,"$1").trim().toLowerCase());
+      const header = (rows[0].match(/("([^"]*)"|[^,]+)/g) || []).map(c=>c.replace(/^"(.*)"$/,"$1").trim().toLowerCase());
       const nameIdx  = header.findIndex(h => /name/.test(h));
       const tableIdx = header.findIndex(h => /table/.test(h));
       const out = [];
       for (let i=1; i<rows.length; i++){
         const cols = rows[i].match(/("([^"]*)"|[^,]+)/g) || [];
-        const get = (idx) => (cols[idx]||"").replace(/^"(.*)"$/,"$1").trim();
+        const get  = (idx) => (cols[idx]||"").replace(/^"(.*)"$/,"$1").trim();
         const name  = nameIdx  >=0 ? get(nameIdx)  : "";
         const table = tableIdx >=0 ? get(tableIdx) : "";
         if (name) out.push({ name, table: table || "-" });
@@ -47,10 +47,10 @@
     }
 
     function App(){
-      const [guests, setGuests] = useState([]);
-      const [name, setName]     = useState("");
-      const [result, setResult] = useState(null);
-      const [err, setErr]       = useState("");
+      const [guests, setGuests]   = useState([]);
+      const [name, setName]       = useState("");
+      const [result, setResult]   = useState(null);
+      const [err, setErr]         = useState("");
       const [loading, setLoading] = useState(true);
 
       // Prefill from ?name= or ?guest=
