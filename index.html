@@ -21,13 +21,11 @@
     const { useEffect, useMemo, useState } = React;
 
     // ---------- SETTINGS ----------
-    // guest-list.csv must live next to index.html in your repo
-    const CSV_URL = "./guest-list.csv";
+    const CSV_URL = "./guest-list.csv"; // guest-list.csv อยู่ใน repo เดียวกับ index.html
 
     // ---------- HELPERS ----------
     const normalizeName = (s) => s.trim().toLowerCase().replace(/\s+/g, " ");
 
-    // simple CSV parser (handles "quoted, values")
     function parseCSV(text) {
       const lines = text.replace(/\r/g,"").split("\n").map(l=>l.trim());
       const rows  = lines.filter(Boolean);
@@ -60,7 +58,7 @@
         if (urlName) setName(urlName);
       },[]);
 
-      // Auto-load CSV on startup (cache-busted)
+      // Auto-load CSV on startup
       useEffect(()=>{
         (async () => {
           try{
@@ -88,7 +86,7 @@
         setErr(""); setResult(null);
         const key = normalizeName(name);
         if (!key){
-          setErr("Please enter your full name. / กรุณากรอกชื่อ-นามสกุล");
+          setErr("Please enter your name as on envelope. / กรุณากรอกชื่อตามหน้าซอง");
           return;
         }
         const hit = index.get(key);
@@ -101,7 +99,7 @@
           <header className="mb-6 text-center">
             <h1 className="text-3xl font-semibold tracking-tight">Find my table / เช็คหมายเลขโต๊ะ</h1>
             <p className="text-sm text-slate-500 mt-1">
-              Type your name to see your table. / พิมพ์ชื่อตัวเองเพื่อดูหมายเลขโต๊ะ
+              Type your name as on envelope to see your table. / พิมพ์ชื่อตามหน้าซองเพื่อดูหมายเลขโต๊ะ
             </p>
           </header>
 
@@ -115,7 +113,7 @@
             <label className="text-sm font-medium">Name as on envelope / ชื่อตามหน้าซอง</label>
             <input
               className="mt-2 w-full rounded-xl ring-1 ring-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900"
-              placeholder="e.g., Somchai Prasert / ตัวอย่าง: สมชาย ประเสริฐ"
+              placeholder="e.g., Somchai Prasert / ตัวอย่าง: นายสมชาย บนซอง"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') lookup(); }}
@@ -155,14 +153,3 @@
             This page loads the guest list from <code>guest-list.csv</code> on each visit. /
             หน้านี้จะโหลดรายชื่อแขกจากไฟล์ <code>guest-list.csv</code> ทุกครั้งที่เปิด
           </footer>
-        </div>
-      );
-    }
-
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  </script>
-</body>
-</html>
-
-
-
